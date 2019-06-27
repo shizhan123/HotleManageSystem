@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        " default-autowire="byName"> <!-- 自动注入 -->
+     <!-- 注解扫描 -->  
+     <context:component-scan base-package="com.sz.Service.Impl"></context:component-scan> 
+      
+     <!-- 对数据源封装类 -->
+     <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+     	<property name="username" value="root"></property>
+     	<property name="password" value="a123456"></property>
+     	<property name="url" value="jdbc:mysql://127.0.0.1:3306/dbtest
+				?characterEncoding=utf8&amp;useUnicode=true&amp;useSSL=false&amp;serverTimezone=UTC"></property>
+     	<property name="driverClassName" value="com.mysql.cj.jdbc.Driver"></property>
+     </bean>
+    
+     <!-- 获取到SqlSessioFactory 属性 -->
+     <bean id="factory" class="org.mybatis.spring.SqlSessionFactoryBean">
+     	<property name="dataSource" ref="dataSource"></property>
+     	<property name="typeAliasesPackage" value="com.sz.Pojo"></property>
+     </bean>
+     
+     <!-- 扫描器相当于mybatis.xml中 mappers下的package标签 扫描对应包后，会给对应接口创建对象，对象名为第一个字母小写然后后面和名字相同 -->
+     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+     	<!-- 要扫描的包 -->
+     	<property name="basePackage" value="com.sz.Mapper"></property>
+     	<!-- 和factory产生关系 -->
+     	<property name="sqlSessionFactory" ref="factory"></property>
+     </bean>
+     
+    <!-- 事务管理器 -->
+	<bean id="txManger" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+	<!-- 声明式事务 -->
+	<tx:advice id="txAdvice" transaction-manager="txManger">
+		<tx:attributes>
+			<tx:method name="ins*"/>
+			<tx:method name="upd*"/>
+			<tx:method name="del*"/>
+			<tx:method name="*" read-only="true"/>
+		</tx:attributes>
+	</tx:advice>     
+	
+	<!-- 配置aop -->
+	<aop:config>
+		<aop:pointcut expression="execution(* com.sz.Service.Impl.*.*(..))" id="mypoint"/>
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="mypoint"/>
+	</aop:config>
+</beans>
